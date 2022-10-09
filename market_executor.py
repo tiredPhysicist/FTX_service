@@ -1,4 +1,5 @@
 import json
+from urllib import request
 
 from constants import VALID_ACTIONS
 from data_gatherer import get_markets, get_orderbook_data
@@ -23,7 +24,13 @@ class MarketExecutor():
         self.tot_price = 0
         self.curr_depth = 0
 
-    def execute_order(self):
+        # For limit orders
+        try: 
+            self.num_iceberg = request['number_of_iceberg_order']
+        except KeyError:
+            self.num_iceberg = None
+
+    def execute_order(self) -> dict:
         # first check if the request is a proper request, try to execute if so
         self.check_proper_request()
         if self.proper_request:
@@ -33,17 +40,7 @@ class MarketExecutor():
 
         # if the action is to sell/buy in reverse direction,
         # change the direction of the request
-        pairs_list = self.market_data.name.to_list()
-        if self.pair in pairs_list:
-            pass
-        else:
-            if self.request['action'] == 'sell':
-                self.request['action'] = 'buy'
-            else:
-                self.request['action'] = 'sell'
-            
-            self.request['base_currency'] = self.quote
-            self.request['quote_currency'] = self.base
+        self.change_direction_if_necessary()
 
         # get the orderbook and try to execute order
         orderbook_data = get_orderbook_data(
@@ -132,6 +129,19 @@ class MarketExecutor():
         # will return True if all the criteria are met
         return True
 
+    def change_direction_if_necessary(self):
+        pairs_list = self.market_data.name.to_list()
+        if self.pair in pairs_list:
+            pass
+        else:
+            if self.request['action'] == 'sell':
+                self.request['action'] = 'buy'
+            else:
+                self.request['action'] = 'sell'
+            
+            self.request['base_currency'] = self.quote
+            self.request['quote_currency'] = self.base
+
     def get_largest_trade_allowed(self) -> float:
         """Finds and return the largest trade allowed for the selected pair
 
@@ -156,7 +166,30 @@ class MarketExecutor():
         return threshold
 
 
-        
+    def place_limit_order(self) -> dict:
+        # first check if the request is a proper request, try to execute if so
+        self.check_proper_request()
+        if self.proper_request:
+            pass
+        else:
+            return self.error_message
+
+        # if the action is to sell/buy in reverse direction,
+        # change the direction of the request
+        self.change_direction_if_necessary()
+
+        tot_order_size = float(self.request['amount'])*float(self.request['price'])
+        order_size = tot_order_size / float(self.request['number_of_iceberg_order'])
+
+        response = {
+            'order_size' : order_size,
+            'price' : self.request['price'],
+            'currency' : self.request['quote_currency']
+        }
+        response_list = [response for i in range(int(self.request['number_of_iceberg_order']))]
+
+        return response_list
+
 
 
         
