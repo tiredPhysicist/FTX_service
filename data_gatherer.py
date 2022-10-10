@@ -7,8 +7,8 @@ def get_orderbook_data(base_currency : str, quote_currency : str) -> pandas.Data
     """Gets and returns orderbook data (with maximum depth)
         using base_currency and quote_currency
     Args:
-        base_currency (str)
-        quote_currency (str)
+        base_currency (str) : e.g. BTC
+        quote_currency (str) : e.g. USD
 
     Returns:
         pandas.DataFrame: orderbook dataframe
