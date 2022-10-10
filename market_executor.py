@@ -1,5 +1,4 @@
 import json
-from urllib import request
 
 from constants import VALID_ACTIONS
 from data_gatherer import get_markets, get_orderbook_data
@@ -10,12 +9,13 @@ class MarketExecutor():
         self.request = request
         self.market_data = get_markets()
 
-        self.proper_request = True
         self.pair = f"{self.request['base_currency']}/{self.request['quote_currency']}".upper()
         self.anti_pair = f"{self.request['quote_currency']}/{self.request['base_currency']}".upper()
-        self.reverse = False
         self.base = self.request['base_currency']
         self.quote = self.request['quote_currency']
+        
+        self.reverse = False
+        self.proper_request = True
         self.error_message = None
 
         # Keeping track of trades
@@ -31,6 +31,11 @@ class MarketExecutor():
             self.num_iceberg = None
 
     def execute_order(self) -> dict:
+        """Tries to execute the order and returns a quote otherwise returns the error
+
+        Returns:
+            dict: returns response json
+        """
         # first check if the request is a proper request, try to execute if so
         self.check_proper_request()
         if self.proper_request:
@@ -42,16 +47,20 @@ class MarketExecutor():
         # change the direction of the request
         self.change_direction_if_necessary()
 
-        # get the orderbook and try to execute order
+        # get the orderbook
         orderbook_data = get_orderbook_data(
                 self.request['base_currency'],
                 self.request['quote_currency'])
+        
+        # select only the side user is going to execute in
         if self.request['action'] == 'buy':
             self.orderbook = orderbook_data['asks']
         else:
             self.orderbook = orderbook_data['bids']
 
+        # aggregate orders until the required amount is reached
         while self.curr_remaining_volume != 0:
+            # adjust the orderbook if the direction is in reverse
             if self.reverse:
                 vol_at_curr_depth = self.orderbook[self.curr_depth][1]*self.orderbook[self.curr_depth][0]
                 price_at_curr_depth = 1/self.orderbook[self.curr_depth][0]
@@ -130,6 +139,8 @@ class MarketExecutor():
         return True
 
     def change_direction_if_necessary(self):
+        """Change the direction of the trade if the pair is reverse
+        """
         pairs_list = self.market_data.name.to_list()
         if self.pair in pairs_list:
             pass
@@ -167,6 +178,11 @@ class MarketExecutor():
 
 
     def place_limit_order(self) -> dict:
+        """Places limit order
+
+        Returns:
+            dict: returns a response message
+        """
         # first check if the request is a proper request, try to execute if so
         self.check_proper_request()
         if self.proper_request:

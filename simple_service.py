@@ -31,12 +31,12 @@ def limit_order_request() -> dict:
     return json_request
 
 if __name__ == "__main__":
-    # request = market_order_request()
-    # executor = MarketExecutor(request)
-    # response = executor.execute_order()
-    # print(response)
+    request = market_order_request()
+    executor = MarketExecutor(request)
+    response = executor.execute_order()
+    print(response)
 
-    request2 = limit_order_request()
-    executor2 = MarketExecutor(request2)
-    response2 = executor2.place_limit_order()
-    print(response2)
+    # request2 = limit_order_request()
+    # executor2 = MarketExecutor(request2)
+    # response2 = executor2.place_limit_order()
+    # print(response2)
